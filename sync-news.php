@@ -6,8 +6,9 @@ define('BASE_URL_WEBSITE', 'http://www.commercialguru.com.sg');
 define('NEWS_PAGE', '/property-management-news/');
 define('LAST_SYNCED_FILENAME', dirname(__FILE__) . '/last_synced_item.ini');
 
-
-include_once('libs/simple_html_dom.php');
+if( !function_exists('file_get_html') ) :
+	include_once('libs/simple_html_dom.php');
+endif;
 
 
 
@@ -190,7 +191,7 @@ function store_news($news_data = array() )
  * @return string
  * @author ews
  **/
-if( !function_exists('strip_html_spaces')) :
+if( !function_exists('strip_html_spaces'))  :
 	function strip_html_spaces($str)
 	{
 		$string = htmlentities($str, null, 'utf-8');
@@ -200,7 +201,7 @@ if( !function_exists('strip_html_spaces')) :
 endif;
 
 /**
- * check whether the post with title exists or not
+ * get any post by post title
  * return NULL if not
  *
  * @return $post or null
@@ -223,8 +224,7 @@ function ews_get_post_by_title($title  =  '')
 function is_last_synced($item_title = '')
 {
 	$data = parse_ini_file(LAST_SYNCED_FILENAME);
-	// echo "Last synced item [".$data['sync_date']."]: ";
-	// echo $data['item_title'] . ' ' . $data['item_date'];
+
 	return ($item_title == $data['item_title']);
 }
 
@@ -241,26 +241,38 @@ function update_last_synced($item_title = '', $item_date = '')
 	file_put_contents(LAST_SYNCED_FILENAME, $data);
 }
 
+/**
+ * Run news sync and return the number of successfully created posts
+ *
+ * @return array
+ * @author ews
+ */
+if( !function_exists('ews_run_news_sync') ) :
+	function ews_run_news_sync()
+	{
+		$news = get_news_urls();
+		
+		$news_data = get_news_data($news);
+		
+		$synced = store_news($news_data);
+		
+		if( $synced == 0 ){
+			$data = parse_ini_file(LAST_SYNCED_FILENAME);
+			$result['type'] = 'no-change';
+			$result['last_item_title'] = $data['item_title'];
+			$result['last_item_date'] = $data['item_date'];
+			$result['sync_date'] = $data['sync_date'];
+		}else{
+			$result['synced'] = $synced;
+			$result['type'] = 'success';
+		}
 
-$news = get_news_urls();
+		return $result;
+	}
+endif;
 
-
-$news_data = get_news_data($news);
-
-
-$synced = store_news($news_data);
-if( $synced == 0 ){
-	$data = parse_ini_file(LAST_SYNCED_FILENAME);
-	$result['type'] = 'no-change';
-	$result['last_item_title'] = $data['item_title'];
-	$result['last_item_date'] = $data['item_date'];
-	$result['sync_date'] = $data['sync_date'];
-}else{
-	$result['synced'] = $synced;
-	$result['type'] = 'success';
-}
-
-
-// echo "<pre>";
-// print_r($news);
-// echo "</pre>";
+/**
+ * Add cron job action for syncing news
+ *
+ */
+add_action('ews_news_sync', 'ews_run_news_sync');

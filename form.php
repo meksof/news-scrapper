@@ -41,7 +41,7 @@ function output_sync_result( $result = array() )
 
 	if( isset($_POST['sync_news']) ){
 		// syncing news
-		require_once('sync-news.php');
+		$result = ews_run_news_sync();
 
 		output_sync_result($result);
 

@@ -8,6 +8,11 @@ Author: ews
 Author URI: http://monprojet.tn
 License: GPL2
 */
+	
+
+require_once('sync-news.php');
+
+
 if( !function_exists('scraping_news_menu') ) :
 	function scraping_news_menu(){
 
@@ -18,5 +23,5 @@ endif;
 add_action('admin_menu', 'scraping_news_menu');
 
 function scraping_news_form(){
-	require('form.php');
+	require_once('form.php');
 }
